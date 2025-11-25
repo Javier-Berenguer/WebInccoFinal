@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Noticia - Fundación INCCO</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/contacto.css" />
+    <style>
+      .noticia-detalle-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .noticia-header {
+        margin-bottom: 2rem;
+      }
+
+      .noticia-meta {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      .noticia-fecha {
+        color: #deb34f;
+        font-weight: bold;
+      }
+
+      .noticia-autor {
+        color: #666;
+      }
+
+      .noticia-titulo-completo {
+        font-size: 2.5rem;
+        color: #2c405c;
+        margin-bottom: 1.5rem;
+        line-height: 1.2;
+      }
+
+      .noticia-imagen-completa {
+        width: 100%;
+        max-height: 500px;
+        object-fit: cover;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+      }
+
+      .noticia-contenido {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: #333;
+        margin-bottom: 2rem;
+        white-space: pre-line;
+      }
+
+      .volver-link {
+        display: inline-block;
+        background: #deb34f;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 30px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background 0.3s;
+      }
+
+      .volver-link:hover {
+        background: #c9a43d;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 3rem;
+        font-size: 1.2rem;
+        color: #2c405c;
+      }
+
+      .error-message {
+        text-align: center;
+        padding: 3rem;
+        color: #d9534f;
+        font-size: 1.2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <img src="/static/Imagenes/LogoBueno.png" alt="Logo Fundación INCCO" />
+      </div>
+      <nav class="nav-buttons">
+        <a href="/">Inicio</a>
+        <a href="/archivo.html">Archivo</a>
+        <a href="/contacto.html">Contacto</a>
+      </nav>
+    </header>
+
+    <div class="noticia-detalle-container" id="noticia-detalle">
+      <div class="loading">Cargando noticia...</div>
+    </div>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-left">
+          <img src="/static/Imagenes/LogoBueno.png" alt="Logo Fundación INCCO" />
+          <p>
+            Nacemos con el objetivo de dar una oportunidad profesional a
+            personas en exclusión social.
+          </p>
+        </div>
+        <div class="footer-right">
+          <a href="mailto:info@incco.org" class="footer-button"
+            >INFO@INCCO.ORG</a
+          >
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>Copyright © 2024 Incco</p>
+        <p>
+          Site Created by
+          <a
+            href="https://es.linkedin.com/in/javier-berenguer-alonso-3968b2198"
+            target="_blank"
+            >JavierBA</a
+          >
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      const API_URL = window.location.origin + '/api';
+
+      async function cargarNoticia() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const noticiaId = urlParams.get('id');
+
+        if (!noticiaId) {
+          document.getElementById('noticia-detalle').innerHTML =
+            '<div class="error-message">No se especificó ninguna noticia.</div>';
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_URL}/noticias/${noticiaId}`);
+
+          if (!response.ok) {
+            throw new Error('Noticia no encontrada');
+          }
+
+          const noticia = await response.json();
+
+          document.title = `${noticia.titulo} - Fundación INCCO`;
+
+          document.getElementById('noticia-detalle').innerHTML = `
+            <div class="noticia-header">
+              <div class="noticia-meta">
+                <span class="noticia-fecha">${formatearFecha(noticia.fecha_publicacion)}</span>
+                <span class="noticia-autor">Por ${noticia.autor}</span>
+              </div>
+              <h1 class="noticia-titulo-completo">${noticia.titulo}</h1>
+            </div>
+            ${noticia.imagen_url ? `<img src="${noticia.imagen_url}" alt="${noticia.titulo}" class="noticia-imagen-completa" />` : ''}
+            <div class="noticia-contenido">${noticia.contenido}</div>
+            <a href="/archivo.html" class="volver-link">← Volver al archivo</a>
+          `;
+        } catch (error) {
+          console.error('Error al cargar noticia:', error);
+          document.getElementById('noticia-detalle').innerHTML =
+            '<div class="error-message">Error al cargar la noticia. Por favor, intenta más tarde.</div>';
+        }
+      }
+
+      function formatearFecha(fecha) {
+        const date = new Date(fecha);
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        return date.toLocaleDateString('es-ES', options);
+      }
+
+      // Cargar noticia al cargar la página
+      cargarNoticia();
+    </script>
+  </body>
+</html>

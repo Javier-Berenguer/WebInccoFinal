@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contacto - Fundación INCCO</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/contacto.css" />
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <img src="/static/Imagenes/LogoBueno.png" alt="Logo Fundación INCCO" />
+      </div>
+      <nav class="nav-buttons">
+        <a href="/">Inicio</a>
+        <a href="/archivo.html">Archivo</a>
+      </nav>
+    </header>
+
+    <section class="contact-section">
+      <h1>Contacto</h1>
+      <h2>¿Te gustaría conocer más?</h2>
+      <form class="contact-form">
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" required />
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required />
+
+        <label for="mensaje">Mensaje</label>
+        <textarea id="mensaje" name="mensaje" rows="5" required></textarea>
+
+        <div class="checkbox-container">
+          <input type="checkbox" id="privacidad" name="privacidad" required />
+          <label for="privacidad"
+            >Acepto la política de privacidad</label
+          >
+        </div>
+
+        <button type="submit">Enviar</button>
+      </form>
+    </section>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-left">
+          <img src="/static/Imagenes/LogoBueno.png" alt="Logo Fundación INCCO" />
+          <p>
+            Nacemos con el objetivo de dar una oportunidad profesional a
+            personas en exclusión social.
+          </p>
+        </div>
+        <div class="footer-right">
+          <a href="mailto:info@incco.org" class="footer-button"
+            >INFO@INCCO.ORG</a
+          >
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>Copyright © 2024 Incco</p>
+        <p>
+          Site Created by
+          <a
+            href="https://es.linkedin.com/in/javier-berenguer-alonso-3968b2198"
+            target="_blank"
+            >JavierBA</a
+          >
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

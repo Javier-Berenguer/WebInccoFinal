@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Acceso Administrador - Fundación INCCO</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/contacto.css" />
+    <style>
+      .login-container {
+        max-width: 450px;
+        margin: 4rem auto;
+        padding: 3rem 2rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .login-header h1 {
+        font-size: 2rem;
+        color: #2c405c;
+        margin-bottom: 0.5rem;
+      }
+
+      .login-header p {
+        color: #666;
+      }
+
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .login-form label {
+        font-weight: bold;
+        color: #2c405c;
+      }
+
+      .login-form input {
+        padding: 0.75rem;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-family: inherit;
+        font-size: 1rem;
+      }
+
+      .login-form button {
+        background: #deb34f;
+        color: white;
+        border: none;
+        padding: 0.9rem 2rem;
+        border-radius: 30px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .login-form button:hover {
+        background: #c9a43d;
+      }
+
+      .login-form button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+
+      .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 0.75rem;
+        border-radius: 5px;
+        border: 1px solid #f5c6cb;
+      }
+
+      .volver-link {
+        text-align: center;
+        margin-top: 1rem;
+      }
+
+      .volver-link a {
+        color: #2c405c;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+
+      .volver-link a:hover {
+        text-decoration: underline;
+      }
+
+          </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <img src="/static/Imagenes/LogoBueno.png" alt="Logo Fundación INCCO" />
+      </div>
+      <nav class="nav-buttons">
+        <a href="/">Inicio</a>
+        <a href="/archivo.html">Archivo</a>
+        <a href="/contacto.html">Contacto</a>
+      </nav>
+    </header>
+
+    <div class="login-container">
+      <div class="login-header">
+        <h1>Acceso Administrador</h1>
+        <p>Ingresa tus credenciales para acceder al panel de administración</p>
+      </div>
+
+      <form class="login-form" id="login-form">
+        <div id="error-container"></div>
+
+        <label for="username">Usuario</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          required
+          autocomplete="username"
+        />
+
+        <label for="password">Contraseña</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          required
+          autocomplete="current-password"
+        />
+
+        <button type="submit" id="login-btn">Iniciar Sesión</button>
+      </form>
+
+      <div class="volver-link">
+        <a href="/archivo.html">← Volver al archivo</a>
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-left">
+          <img src="/static/Imagenes/LogoBueno.png" alt="Logo Fundación INCCO" />
+          <p>
+            Nacemos con el objetivo de dar una oportunidad profesional a
+            personas en exclusión social.
+          </p>
+        </div>
+        <div class="footer-right">
+          <a href="mailto:info@incco.org" class="footer-button"
+            >INFO@INCCO.ORG</a
+          >
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>Copyright © 2024 Incco</p>
+        <p>
+          Site Created by
+          <a
+            href="https://es.linkedin.com/in/javier-berenguer-alonso-3968b2198"
+            target="_blank"
+            >JavierBA</a
+          >
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      const API_URL = window.location.origin + '/api';
+
+      document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const errorContainer = document.getElementById('error-container');
+        const loginBtn = document.getElementById('login-btn');
+
+        errorContainer.innerHTML = '';
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Iniciando sesión...';
+
+        try {
+          const response = await fetch(`${API_URL}/admin/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al iniciar sesión');
+          }
+
+          const data = await response.json();
+          localStorage.setItem('admin_token', data.access_token);
+
+          // Redirigir al panel de administración
+          window.location.href = '/admin-panel.html';
+        } catch (error) {
+          console.error('Error:', error);
+          errorContainer.innerHTML = `<div class="error-message">${error.message}</div>`;
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Iniciar Sesión';
+        }
+      });
+    </script>
+  </body>
+</html>
