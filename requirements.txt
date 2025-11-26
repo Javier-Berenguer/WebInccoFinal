@@ -4,3 +4,4 @@ motor
 python-dotenv
 PyJWT
 python-multipart
+cloudinary

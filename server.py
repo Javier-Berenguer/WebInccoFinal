@@ -5,6 +5,12 @@ from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+
+# --- Cloudinary ---
+import cloudinary
+import cloudinary.uploader
+# -------------------
+
 import os
 import logging
 from pathlib import Path
@@ -19,6 +25,10 @@ import shutil
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# ---- Cloudinary config ----
+cloudinary.config(secure=True)
+# ----------------------------
+
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -32,7 +42,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 horas
 # Create the main app
 app = FastAPI()
 
-# Create uploads directory
+# Create uploads directory (not used anymore, but maintained to avoid breaking anything)
 UPLOADS_DIR = ROOT_DIR / 'uploads'
 UPLOADS_DIR.mkdir(exist_ok=True)
 
@@ -80,6 +90,7 @@ class NoticiaUpdate(BaseModel):
     imagen_url: Optional[str] = None
     autor: Optional[str] = None
 
+
 # Helper functions
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
@@ -107,13 +118,10 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Token inválido")
 
-# Initialize admin user (username: AdministradorIncco, password: AdminIncco*.2025)
+
+# Initialize admin user
 @app.on_event("startup")
 async def startup_event():
-    """
-    Ensure there is at least one administrator account in the database.
-    If none exists with the configured username, it will be created.
-    """
     admin = await db.admins.find_one({"username": "AdministradorIncco"})
     if not admin:
         admin_doc = {
@@ -123,7 +131,9 @@ async def startup_event():
         await db.admins.insert_one(admin_doc)
         logger.info("Admin user created: username=AdministradorIncco, password=AdminIncco*.2025")
 
-# Routes
+
+# ----------- ROUTES -----------
+
 @api_router.post("/admin/login", response_model=TokenResponse)
 async def admin_login(credentials: AdminLogin):
     admin = await db.admins.find_one({"username": credentials.username})
@@ -133,9 +143,11 @@ async def admin_login(credentials: AdminLogin):
     access_token = create_access_token(data={"sub": credentials.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
+
 @api_router.get("/admin/verify")
 async def verify_admin(username: str = Depends(verify_token)):
     return {"username": username, "authenticated": True}
+
 
 @api_router.post("/noticias", response_model=Noticia)
 async def crear_noticia(noticia: NoticiaCreate, username: str = Depends(verify_token)):
@@ -148,6 +160,7 @@ async def crear_noticia(noticia: NoticiaCreate, username: str = Depends(verify_t
     await db.noticias.insert_one(doc)
     return noticia_obj
 
+
 @api_router.get("/noticias", response_model=List[Noticia])
 async def obtener_noticias():
     noticias = await db.noticias.find({}, {"_id": 0}).sort("fecha_publicacion", -1).to_list(1000)
@@ -157,6 +170,7 @@ async def obtener_noticias():
             noticia['fecha_publicacion'] = datetime.fromisoformat(noticia['fecha_publicacion'])
     
     return noticias
+
 
 @api_router.get("/noticias/{noticia_id}", response_model=Noticia)
 async def obtener_noticia(noticia_id: str):
@@ -169,6 +183,7 @@ async def obtener_noticia(noticia_id: str):
         noticia['fecha_publicacion'] = datetime.fromisoformat(noticia['fecha_publicacion'])
     
     return noticia
+
 
 @api_router.put("/noticias/{noticia_id}", response_model=Noticia)
 async def actualizar_noticia(noticia_id: str, noticia_update: NoticiaUpdate, username: str = Depends(verify_token)):
@@ -189,6 +204,7 @@ async def actualizar_noticia(noticia_id: str, noticia_update: NoticiaUpdate, use
     
     return noticia_actualizada
 
+
 @api_router.delete("/noticias/{noticia_id}")
 async def eliminar_noticia(noticia_id: str, username: str = Depends(verify_token)):
     result = await db.noticias.delete_one({"id": noticia_id})
@@ -198,28 +214,35 @@ async def eliminar_noticia(noticia_id: str, username: str = Depends(verify_token
     
     return {"message": "Noticia eliminada exitosamente"}
 
+
+# ----------- CLOUDINARY UPLOAD IMAGE -----------
 @api_router.post("/upload-imagen")
 async def subir_imagen(file: UploadFile = File(...), username: str = Depends(verify_token)):
-    # Validar tipo de archivo
-    if not file.content_type.startswith('image/'):
+
+    if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
-    
-    # Generar nombre único
-    file_extension = file.filename.split('.')[-1]
-    unique_filename = f"{uuid.uuid4()}.{file_extension}"
-    file_path = UPLOADS_DIR / unique_filename
-    
-    # Guardar archivo
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    
-    # Retornar URL
-    return {"imagen_url": f"/uploads/{unique_filename}"}
+
+    try:
+        upload_result = cloudinary.uploader.upload(
+            file.file,
+            folder="incco_noticias",
+            resource_type="image"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error al subir la imagen a Cloudinary")
+
+    imagen_url = upload_result.get("secure_url")
+
+    if not imagen_url:
+        raise HTTPException(status_code=500, detail="No se pudo obtener la URL de la imagen")
+
+    return {"imagen_url": imagen_url}
+
 
 # Include the router in the main app
 app.include_router(api_router)
 
-# Serve uploaded files
+# Serve uploaded files (not needed but kept)
 app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 # Serve static HTML files
@@ -258,12 +281,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
+# Logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
